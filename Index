@@ -103,3 +103,33 @@
 
             <div class="info-row">
               <span class="label">Fornecimento:</span>
+              <span class="value">${d["Codigo_do_Fornecimento"] ?? '-'}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="label">Hidrômetro:</span>
+              <span class="value">${d["Hidrômetro"] ?? '-'}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="label">Leitura:</span>
+              <span class="value"><b>${d["Leitura"] ?? '-'}</b></span>
+            </div>
+
+            <div class="info-row">
+              <span class="label">Mês:</span>
+              <span class="value">${d["Mes_Referencia"] ?? '-'}</span>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+      } catch (e) {
+        container.innerHTML = "<p style='text-align:center; color:red;'>Erro ao carregar dados.</p>";
+      } finally {
+        loading.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
