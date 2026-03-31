@@ -2,113 +2,180 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SJC Auditoria - Campo</title>
+
   <style>
-    :root { --primary: #0056b3; --bg: #f8f9fa; --card-bg: #ffffff; }
-    body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); margin: 0; padding: 0; }
-    .sticky-top { position: sticky; top: 0; z-index: 1000; background: white; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .header-btn { background: var(--primary); color: white; padding: 14px; border-radius: 8px; margin-bottom: 12px; text-align: center; font-weight: bold; }
-    #search { width: 100%; padding: 15px; border: 2px solid var(--primary); border-radius: 35px; font-size: 16px; box-sizing: border-box; outline: none; text-transform: uppercase; }
-    .content { padding: 12px; }
-    .card { background: var(--card-bg); border-radius: 15px; padding: 16px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 8px solid var(--primary); }
-    .endereco-txt { color: var(--primary); font-weight: 800; font-size: 14px; text-transform: uppercase; display: block; margin-bottom: 10px; }
-    .info-row { display: flex; margin-bottom: 4px; font-size: 13px; }
-    .label { font-weight: 600; color: #666; width: 120px; flex-shrink: 0; }
-    .value { color: #111; flex: 1; text-transform: uppercase; font-weight: 500; }
-    #loading { text-align: center; display: none; padding: 10px; color: var(--primary); font-weight: bold; }
+    :root {
+      --primary: #0056b3;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      margin: 0;
+    }
+
+    .topo {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    .titulo {
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 30px;
+      border: 2px solid var(--primary);
+      font-size: 16px;
+      text-transform: uppercase;
+      outline: none;
+    }
+
+    .content {
+      padding: 10px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-left: 6px solid var(--primary);
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+
+    .endereco {
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .row {
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .erro {
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 10px;
+      color: var(--primary);
+      font-weight: bold;
+      display: none;
+    }
   </style>
 </head>
+
 <body>
 
-  <div class="sticky-top">
-    <div class="header-btn">Auditoria SJC - Pesquisa</div>
-    <input type="text" id="search" placeholder="RUA E NÚMERO, HIDRÔMETRO OU TACE" autocomplete="off">
-    <div id="loading">Buscando no banco...</div>
-  </div>
+<div class="topo">
+  <div class="titulo">Auditoria SJC</div>
+  <input type="text" id="busca" placeholder="Digite rua, hidrômetro ou fornecimento">
+</div>
 
-  <div class="content" id="results-container">
-    <p style="text-align: center; color: #999; margin-top: 20px;">Digite para pesquisar.</p>
-  </div>
+<div class="loading" id="loading">Buscando...</div>
 
-  <script>
-    const SUPABASE_URL = 'https://smzehsmsqrshnvoiwzap.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_hAMXYnXJ5cjc8Ii9gAgscw_Uh3H_JM4';
+<div class="content" id="resultado">
+  <p style="text-align:center;color:#777;">Digite para pesquisar</p>
+</div>
 
-    const container = document.getElementById('results-container');
-    const loading = document.getElementById('loading');
-    let timeout = null;
+<script>
+const SUPABASE_URL = "https://smzehsmsqrshnvoiwzap.supabase.co";
+const SUPABASE_KEY = "COLE_SUA_CHAVE_AQUI"; // ⚠️ coloque a ANON KEY
 
-    document.getElementById('search').oninput = function () {
-      clearTimeout(timeout);
-      const t = this.value.trim().toUpperCase();
-      if (t.length < 3) return;
-      timeout = setTimeout(() => { executarBusca(t); }, 500);
-    };
+const resultado = document.getElementById("resultado");
+const loading = document.getElementById("loading");
 
-    async function executarBusca(t) {
-      loading.style.display = 'block';
-      
-      // Criamos os filtros baseados no que você digitou
-      // Se você digitar "RUA DEZ 100", ele busca registros que contenham essas palavras
-      const p = t.split(/\s+/);
-      const filtroEndereco = `Endereço.ilike.*${p.join('*')}*`;
+let timeout = null;
 
-      // IMPORTANTE: Verifique se os nomes das colunas (Endereço, Hidrômetro) 
-      // estão idênticos ao que está no seu Supabase (maiúsculas/acentos)
-      const filtrosOr = [
-        filtroEndereco,
-        `Hidrômetro.ilike.*${t}*`
-      ];
+document.getElementById("busca").addEventListener("input", function() {
+  clearTimeout(timeout);
+  const valor = this.value.trim();
 
-      // Tenta buscar as colunas básicas. Removi "Nome_do_TACE" e "Leitura_Anterior" 
-      // para evitar erro caso elas tenham nomes diferentes no seu banco.
-      const colunas = "Endereço,Codigo_do_Fornecimento,Hidrômetro,Leitura,Mes_Referencia";
-      
-      const url = `${SUPABASE_URL}/rest/v1/Dados?select=${colunas}&or=(${encodeURIComponent(filtrosOr.join(','))})&limit=30`;
+  if (valor.length < 3) return;
 
-      try {
-        const response = await fetch(url, {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`
-          }
-        });
+  timeout = setTimeout(() => buscar(valor), 400);
+});
 
-        if (!response.ok) {
-          const erroTexto = await response.text();
-          console.error("Erro Supabase:", erroTexto);
-          container.innerHTML = `<p style='text-align:center; color:red;'>Erro no Servidor: Verifique os nomes das colunas.</p>`;
-          return;
-        }
+async function buscar(texto) {
+  loading.style.display = "block";
+  resultado.innerHTML = "";
 
-        const dados = await response.json();
-        container.innerHTML = "";
+  try {
 
-        if (dados.length === 0) {
-          container.innerHTML = "<p style='text-align:center; color:#999;'>Nenhum registro encontrado.</p>";
-          return;
-        }
+    // 🔎 Query SIMPLES (evita erro no OR complexo)
+    const url = `${SUPABASE_URL}/rest/v1/Dados?select=*&limit=30`;
 
-        dados.forEach(d => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <span class="endereco-txt">${d["Endereço"] || 'SEM ENDEREÇO'}</span>
-            <div class="info-row"><span class="label">Fornecimento:</span><span class="value">${d.Codigo_do_Fornecimento || '-'}</span></div>
-            <div class="info-row"><span class="label">Hidrômetro:</span><span class="value">${d["Hidrômetro"] || '-'}</span></div>
-            <div class="info-row"><span class="label">Leitura:</span><span class="value"><b>${d.Leitura || '-'}</b></span></div>
-            <div class="info-row"><span class="label">Mês:</span><span class="value">${d.Mes_Referencia || '-'}</span></div>
-          `;
-          container.appendChild(card);
-        });
-
-      } catch (e) {
-        container.innerHTML = "<p style='text-align:center; color:red;'>Erro de conexão. Verifique a internet.</p>";
-      } finally {
-        loading.style.display = 'none';
+    const response = await fetch(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
       }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error(data);
+      resultado.innerHTML = `<div class="erro">Erro: ${JSON.stringify(data)}</div>`;
+      return;
     }
-  </script>
+
+    // 🔎 FILTRO LOCAL (mais seguro)
+    const filtro = texto.toUpperCase();
+
+    const filtrados = data.filter(d =>
+      JSON.stringify(d).toUpperCase().includes(filtro)
+    );
+
+    if (filtrados.length === 0) {
+      resultado.innerHTML = "<p style='text-align:center;color:#999;'>Nenhum resultado</p>";
+      return;
+    }
+
+    filtrados.forEach(d => {
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="endereco">${d.Endereço || d.endereco || 'SEM ENDEREÇO'}</div>
+        <div class="row"><b>Fornecimento:</b> ${d.Codigo_do_Fornecimento || d.codigo_do_fornecimento || '-'}</div>
+        <div class="row"><b>Hidrômetro:</b> ${d.Hidrômetro || d.hidrometro || '-'}</div>
+        <div class="row"><b>Leitura:</b> ${d.Leitura || d.leitura || '-'}</div>
+        <div class="row"><b>Mês:</b> ${d.Mes_Referencia || d.mes_referencia || '-'}</div>
+      `;
+
+      resultado.appendChild(card);
+    });
+
+  } catch (erro) {
+    console.error(erro);
+    resultado.innerHTML = "<div class='erro'>Erro de conexão com servidor</div>";
+  } finally {
+    loading.style.display = "none";
+  }
+}
+</script>
+
 </body>
 </html>
