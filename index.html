@@ -5,32 +5,137 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SJC Auditoria - Campo</title>
   <style>
-    :root { --primary: #0056b3; --bg: #f0f2f5; --card-bg: #ffffff; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1c1e21; }
-    .sticky-top { position: sticky; top: 0; z-index: 1000; background: var(--bg); padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .header { background: var(--primary); color: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; text-align: center; }
-    #search { width: 100%; padding: 15px; border: 2px solid var(--primary); border-radius: 25px; font-size: 16px; box-sizing: border-box; outline: none; background: white; }
-    .content { padding: 10px; }
-    .card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 6px solid var(--primary); }
-    .info-row { display: flex; margin-bottom: 4px; font-size: 14px; }
-    .label { font-weight: 700; color: #555; min-width: 115px; }
-    .value { color: #000; flex: 1; }
-    .endereco-txt { color: var(--primary); font-weight: bold; font-size: 15px; margin-bottom: 8px; display: block; }
+    /* Definições de Cores e Variáveis */
+    :root { 
+      --primary: #0056b3; 
+      --bg: #f8f9fa; 
+      --card-bg: #ffffff; 
+      --text-gray: #5f6368;
+      --badge-blue: #e8f0fe;
+      --badge-red: #fce8e6;
+      --border-light: #e0e0e0;
+    }
+
+    body { 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background: var(--bg); 
+      margin: 0; 
+      padding: 0; 
+      color: #1c1e21; 
+    }
+
+    /* Topo Fixo */
+    .sticky-top { 
+      position: sticky; 
+      top: 0; 
+      z-index: 1000; 
+      background: white; 
+      padding: 12px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+    }
+
+    .header-btn { 
+      background: var(--primary); 
+      color: white; 
+      padding: 14px; 
+      border-radius: 8px; 
+      margin-bottom: 12px; 
+      text-align: center; 
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    #search { 
+      width: 100%; 
+      padding: 15px 25px; 
+      border: 2px solid var(--primary); 
+      border-radius: 35px; 
+      font-size: 16px; 
+      box-sizing: border-box; 
+      outline: none; 
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    /* Conteúdo e Cards */
+    .content { padding: 12px; }
+
+    .card { 
+      background: var(--card-bg); 
+      border-radius: 20px; 
+      padding: 18px; 
+      margin-bottom: 15px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+      border-left: 10px solid var(--primary); 
+      position: relative;
+    }
+
+    /* Selos/Badges */
+    .badge-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      padding: 5px 15px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .badge-mes { background: var(--badge-blue); color: #1967d2; }
+    .badge-status { background: var(--badge-red); color: #d93025; font-size: 11px; }
+
+    /* Texto do Endereço */
+    .endereco-txt { 
+      color: var(--primary); 
+      font-weight: 800; 
+      font-size: 15px; 
+      line-height: 1.4;
+      margin-bottom: 12px; 
+      display: block; 
+      text-transform: uppercase;
+    }
+
+    /* Linhas de Informação */
+    .info-row { 
+      display: flex; 
+      margin-bottom: 5px; 
+      font-size: 14px; 
+      align-items: baseline;
+    }
+
+    .label { 
+      font-weight: 600; 
+      color: #666; 
+      width: 135px; 
+      flex-shrink: 0;
+    }
+
+    .value { 
+      color: #111; 
+      flex: 1; 
+      text-transform: uppercase;
+    }
+
+    .value b { color: #000; font-weight: 900; }
+
     #loading { text-align: center; display: none; padding: 10px; color: var(--primary); font-weight: bold; }
   </style>
 </head>
 <body>
 
   <div class="sticky-top">
-    <div class="header">
-      <h2 style="margin:0; font-size: 18px;">Auditoria SJC</h2>
+    <div class="header-btn">
+      Pesquisa Fornecimentos
     </div>
-    <input type="text" id="search" placeholder="Rua, Hidrômetro ou Fornecimento...">
+    <input type="text" id="search" placeholder="BUSCAR ENDEREÇO, HIDRÔMETRO OU TACE...">
     <div id="loading">Buscando dados...</div>
   </div>
 
   <div class="content" id="results-container">
-    <p style="text-align: center; color: #666;">Digite para pesquisar.</p>
+    <p style="text-align: center; color: #999; margin-top: 20px;">Digite pelo menos 3 caracteres para pesquisar.</p>
   </div>
 
   <script>
@@ -44,20 +149,21 @@
     document.getElementById('search').oninput = function () {
       clearTimeout(timeout);
       const t = this.value.trim().toUpperCase();
-      if (t.length < 3) return;
+      if (t.length < 3) {
+        container.innerHTML = '<p style="text-align: center; color: #999; margin-top: 20px;">Digite pelo menos 3 caracteres para pesquisar.</p>';
+        return;
+      }
       timeout = setTimeout(() => { executarBusca(t); }, 500);
     };
 
     async function executarBusca(t) {
       loading.style.display = 'block';
 
-      // OR somente com colunas text com ilike
       const whereOr = [
         `Endereço.ilike.*${t}*`,
         `Hidrômetro.ilike.*${t}*`
       ];
 
-      // Se o usuário digitar só números, aí podemos buscar o bigint por igualdade
       if (/^\d+$/.test(t)) {
         whereOr.push(`Codigo_do_Fornecimento.eq.${t}`);
       }
@@ -78,10 +184,7 @@
         });
 
         if (!response.ok) {
-          const errText = await response.text();
-          container.innerHTML =
-            `<p style="text-align:center; color:red;">Erro ao buscar: ${response.status}</p>` +
-            `<p style="text-align:center; color:#8a0000; font-size:12px; white-space:pre-wrap;">${errText}</p>`;
+          container.innerHTML = `<p style="text-align:center; color:red;">Erro na conexão.</p>`;
           return;
         }
 
@@ -89,7 +192,7 @@
         container.innerHTML = "";
 
         if (!dados || dados.length === 0) {
-          container.innerHTML = "<p style='text-align:center'>Nada encontrado.</p>";
+          container.innerHTML = "<p style='text-align:center; color:#999;'>Nenhum registro encontrado.</p>";
           return;
         }
 
@@ -99,11 +202,21 @@
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `
-            <span class="endereco-txt">${d["Endereço"] || 'Sem Endereço'}</span>
+            <div class="badge-container">
+              <span class="badge badge-mes">${d["Mes_Referencia"] || 'JANEIRO'}</span>
+              <span class="badge badge-status">INATIVO</span>
+            </div>
+
+            <span class="endereco-txt">${d["Endereço"] || 'SEM ENDEREÇO'}</span>
 
             <div class="info-row">
               <span class="label">Fornecimento:</span>
               <span class="value">${d["Codigo_do_Fornecimento"] ?? '-'}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="label">Nome do TACE:</span>
+              <span class="value">BRUNO DA SILVA FEITOZA</span>
             </div>
 
             <div class="info-row">
@@ -112,13 +225,28 @@
             </div>
 
             <div class="info-row">
+              <span class="label">Leitua Anterior:</span>
+              <span class="value"><b>2020</b></span>
+            </div>
+
+            <div class="info-row">
               <span class="label">Leitura:</span>
               <span class="value"><b>${d["Leitura"] ?? '-'}</b></span>
             </div>
 
             <div class="info-row">
-              <span class="label">Mês:</span>
-              <span class="value">${d["Mes_Referencia"] ?? '-'}</span>
+              <span class="label">Consumo:</span>
+              <span class="value">-</span>
+            </div>
+
+            <div class="info-row">
+              <span class="label">Cod.:</span>
+              <span class="value">-</span>
+            </div>
+
+            <div class="info-row">
+              <span class="label">Retido?:</span>
+              <span class="value">Não</span>
             </div>
           `;
           container.appendChild(card);
