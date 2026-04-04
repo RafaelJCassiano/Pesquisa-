@@ -42,7 +42,7 @@
   <div class="sticky-top">
     <div class="header-btn">Auditoria de Campo</div>
     <div class="search-container">
-      <input type="text" id="search" placeholder="FORNEC., HIDRÔM. OU RUA, Nº" autocomplete="off">
+      <input type="text" id="search" placeholder="FORNEC., HIDRÔMETRO. OU RUA%Nº" autocomplete="off">
       <button class="clear-btn" id="clearSearch">✕</button>
     </div>
     <div id="loading">Buscando dados...</div>
@@ -94,8 +94,8 @@
       const t = normalizarTexto(v);
       clearBtn.style.display = v.length > 0 ? 'block' : 'none';
 
-      if (t.length < 3) {
-        container.innerHTML = '<p class="no-results">Digite pelo menos 3 caracteres.</p>';
+      if (t.length < 4) {
+        container.innerHTML = '<p class="no-results">Digite pelo menos 4 caracteres.</p>';
         return;
       }
       clearTimeout(timeout);
@@ -105,7 +105,7 @@
     clearBtn.onclick = () => {
       searchInput.value = '';
       clearBtn.style.display = 'none';
-      container.innerHTML = '<p class="no-results">Digite pelo menos 3 caracteres.</p>';
+      container.innerHTML = '<p class="no-results">Digite pelo menos 4 caracteres.</p>';
     };
 
     async function executarBusca(t) {
