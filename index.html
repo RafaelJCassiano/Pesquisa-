@@ -9,47 +9,70 @@
       --primary: #0056b3; --bg: #f0f2f5; --card-bg: #ffffff; 
       --accent: #e8f0fe; --success: #1e8e3e; --danger: #d93025;
       --text-main: #1c1e21; --text-muted: #65676b;
+      --março: #1e8e3e; --fevereiro: #0056b3;
     }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text-main); }
+    
+    /* Cabeçalho */
     .sticky-top { position: sticky; top: 0; z-index: 1000; background: white; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     .header-btn { background: var(--primary); color: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; text-align: center; font-weight: bold; font-size: 16px; text-transform: uppercase; }
+    
+    /* Busca */
     .search-container { position: relative; }
     #search { width: 100%; padding: 14px 45px 14px 20px; border: 2px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; outline: none; text-transform: uppercase; }
     .clear-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #ccc; color: white; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: none; font-weight: bold; }
+    
+    /* Cards */
     .content { padding: 12px; max-width: 600px; margin: 0 auto; }
-    .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-left: 6px solid var(--primary); }
+    .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-left: 6px solid var(--primary); position: relative; }
+    .card-março { border-left-color: var(--março); }
+    .card-fevereiro { border-left-color: var(--fevereiro); }
+
     .badge-container { display: flex; justify-content: space-between; margin-bottom: 10px; }
     .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .badge-março { background: #e6f4ea; color: var(--março); }
     .badge-mes { background: var(--accent); color: var(--primary); }
     .badge-status { background: #fce8e6; color: var(--danger); }
     .badge-ativo { background: #e6f4ea; color: var(--success); }
+    
     .endereco-txt { color: var(--primary); font-weight: 800; font-size: 14px; line-height: 1.3; margin-bottom: 12px; display: block; }
+    
+    /* Leitura */
     .reading-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 12px; }
     .reading-item { display: flex; flex-direction: column; }
     .reading-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; }
     .reading-val { font-size: 16px; font-weight: 900; color: #000; }
+    
+    /* Linhas de Info */
     .info-row { display: flex; margin-bottom: 4px; font-size: 13px; border-bottom: 1px dashed #eee; padding-bottom: 2px; }
     .label { color: var(--text-muted); width: 100px; flex-shrink: 0; font-weight: 600; }
     .value { color: #111; flex: 1; text-transform: uppercase; font-weight: 500; overflow-wrap: anywhere; }
     .ocorr-val { color: var(--danger); font-weight: 700; }
+    
+    /* Highlight Amarelo */
     mark { background: #fff176; color: #000; padding: 0 2px; border-radius: 2px; }
+    
     #loading { text-align: center; display: none; padding: 10px; color: var(--primary); font-weight: bold; }
-    .no-results { text-align: center; color: #999; margin-top: 30px; padding: 20px; }
+    .no-results { text-align: center; color: #999; margin-top: 30px; padding: 20px; font-size: 14px; }
   </style>
 </head>
 <body>
 
   <div class="sticky-top">
-    <div class="header-btn">Auditoria de Campo</div>
+    <div class="header-btn">PESQUISA EM CAMPO</div>
     <div class="search-container">
-      <input type="text" id="search" placeholder="FORNEC., HIDRÔMETRO. OU RUA%Nº" autocomplete="off">
+      <input type="text" id="search" placeholder="RUA HIDRÔMETRO OU FORNEC." autocomplete="off">
       <button class="clear-btn" id="clearSearch">✕</button>
     </div>
-    <div id="loading">Buscando dados...</div>
+    <div id="loading">Consultando dados...</div>
   </div>
 
   <div class="content" id="results-container">
-    <p class="no-results">Digite pelo menos 4 caracteres.</p>
+    <p class="no-results">
+     Digitar 4 caracters pra começa.<br>
+      
+      ex: ANDROMEDA, 3851
+    </p>
   </div>
 
   <script>
@@ -64,25 +87,26 @@
     let timeout = null;
     let abortController = null;
 
+    // Remove acentos para a busca
+    function limparParaBusca(texto) {
+      return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    }
+
     function formatarMes(valor) {
       if (!valor) return "-";
-      const mesNum = Math.floor(parseFloat(valor));
       const meses = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
-      return meses[mesNum - 1] || valor;
+      return meses[Math.floor(parseFloat(valor)) - 1] || valor;
     }
 
-    function normalizarTexto(texto) {
-      if (!texto) return "";
-      return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-    }
-
+    // Função de Highlight (Amarelo) corrigida
     function highlight(text, term) {
       if (!term || !text) return text || '-';
-      const termLimpo = normalizarTexto(term);
-      const parts = termLimpo.split(',').map(p => p.trim()).filter(p => p.length > 0);
+      const palavras = term.trim().replace(/,/g, '').split(/\s+/);
       let res = String(text);
-      parts.forEach(p => {
-        const safeP = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      palavras.forEach(p => {
+        if (p.length < 2) return;
+        const pLimpa = limparParaBusca(p);
+        const safeP = pLimpa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`(${safeP})`, "gi");
         res = res.replace(regex, '<mark>$1</mark>');
       });
@@ -91,49 +115,27 @@
 
     searchInput.oninput = function () {
       const v = this.value;
-      const t = normalizarTexto(v);
       clearBtn.style.display = v.length > 0 ? 'block' : 'none';
-
-      if (t.length < 4) {
-        container.innerHTML = '<p class="no-results">Digite pelo menos 4 caracteres.</p>';
-        return;
-      }
+      if (v.trim().length < 4) return;
       clearTimeout(timeout);
-      timeout = setTimeout(() => { executarBusca(t); }, 400);
+      timeout = setTimeout(() => { executarBusca(v); }, 500);
     };
 
     clearBtn.onclick = () => {
       searchInput.value = '';
       clearBtn.style.display = 'none';
-      container.innerHTML = '<p class="no-results">Digite pelo menos 4 caracteres.</p>';
+      container.innerHTML = '<p class="no-results">Aguardando busca...</p>';
     };
 
-    async function executarBusca(t) {
+    async function executarBusca(tOriginal) {
       if (abortController) abortController.abort();
       abortController = new AbortController();
       loading.style.display = 'block';
 
-      let orPart = "";
-      // Se for apenas número, prioriza busca pelo FINAL do Hidrômetro ou Fornecimento
-      const apenasNumeros = /^\d+$/.test(t);
+      // Tratamento para o corretor ortográfico
+      const termoProcessado = limparParaBusca(tOriginal).replace(/,/g, ' ').replace(/\s+/g, '%');
 
-      if (t.includes(",")) {
-        const partes = t.split(",").map(p => p.trim()).filter(p => p !== "");
-        orPart = partes.length >= 2 ? `Endereço.ilike.*${partes[0]}*,Endereço.ilike.*${partes[1]}*` : `Endereço.ilike.*${partes[0]}*`;
-      } else if (apenasNumeros) {
-        // Busca fonética/final: %termo localiza os últimos dígitos
-        orPart = `Hidrômetro.ilike.*${t},Codigo_do_Fornecimento.ilike.*${t}`;
-      } else {
-        orPart = `Endereço.ilike.*${t}*,Hidrômetro.ilike.*${t}*,Nome_do_TACE.ilike.*${t}*,Codigo_do_Fornecimento.ilike.*${t}*`;
-      }
-
-      const colunas = [
-        'Endereço', 'Codigo_do_Fornecimento', 'Hidrômetro', 'Leitura', 
-        'Leitura_anterior', 'Mes_Referencia', 'Nome_do_TACE', 
-        'Situacao_Imovel', 'Causas_de_Leitura_Não_Leitura_Atual'
-      ];
-      
-      const url = `${SUPABASE_URL}/rest/v1/Dados?select=${encodeURIComponent(colunas.join(','))}&or=(${encodeURIComponent(orPart)})&limit=40`;
+      const url = `${SUPABASE_URL}/rest/v1/Dados?select=*&busca_rapida=ilike.*${encodeURIComponent(termoProcessado)}*&order=Mes_Referencia.desc&limit=30`;
 
       try {
         const response = await fetch(url, {
@@ -145,32 +147,28 @@
         container.innerHTML = "";
 
         if (!dados || dados.length === 0) {
-          container.innerHTML = `<p class='no-results'>Nenhum registro encontrado.</p>`;
+          container.innerHTML = `<p class='no-results'>Nenhum dado para "${tOriginal}".</p>`;
           return;
         }
 
         let htmlCards = "";
         dados.forEach(d => {
+          const isMarco = Math.floor(parseFloat(d.Mes_Referencia)) === 3;
           const statusClass = (d.Situacao_Imovel || '').toUpperCase() === 'INATIVO' ? 'badge-status' : 'badge-ativo';
+          
           htmlCards += `
-            <div class="card">
+            <div class="card ${isMarco ? 'card-março' : 'card-fevereiro'}">
               <div class="badge-container">
-                <span class="badge badge-mes">${formatarMes(d.Mes_Referencia)}</span>
+                <span class="badge ${isMarco ? 'badge-março' : 'badge-mes'}">${formatarMes(d.Mes_Referencia)}</span>
                 <span class="badge ${statusClass}">${d.Situacao_Imovel || 'ATIVO'}</span>
               </div>
-              <span class="endereco-txt">${highlight(d["Endereço"], t)}</span>
+              <span class="endereco-txt">${highlight(d["Endereço"], tOriginal)}</span>
               <div class="reading-box">
-                <div class="reading-item">
-                  <span class="reading-label">Anterior</span>
-                  <span class="reading-val">${d.Leitura_anterior ?? '-'}</span>
-                </div>
-                <div class="reading-item">
-                  <span class="reading-label">Atual</span>
-                  <span class="reading-val" style="color:var(--primary)">${d.Leitura ?? '-'}</span>
-                </div>
+                <div class="reading-item"><span class="reading-label">Anterior</span><span class="reading-val">${d.Leitura_anterior ?? '-'}</span></div>
+                <div class="reading-item"><span class="reading-label">Atual</span><span class="reading-val" style="color:var(--primary)">${d.Leitura ?? '-'}</span></div>
               </div>
-              <div class="info-row"><span class="label">Fornecimento:</span><span class="value"><b>${highlight(d.Codigo_do_Fornecimento, t)}</b></span></div>
-              <div class="info-row"><span class="label">Hidrômetro:</span><span class="value">${highlight(d["Hidrômetro"], t)}</span></div>
+              <div class="info-row"><span class="label">Fornecimento:</span><span class="value"><b>${highlight(d.Codigo_do_Fornecimento, tOriginal)}</b></span></div>
+              <div class="info-row"><span class="label">Hidrômetro:</span><span class="value">${highlight(d["Hidrômetro"], tOriginal)}</span></div>
               <div class="info-row"><span class="label">TACE:</span><span class="value">${d.Nome_do_TACE || '-'}</span></div>
               <div class="info-row"><span class="label">CÓD:</span><span class="value ocorr-val">${d.Causas_de_Leitura_Não_Leitura_Atual || '-'}</span></div>
             </div>`;
@@ -178,9 +176,7 @@
         container.innerHTML = htmlCards;
 
       } catch (e) {
-        if (e.name !== 'AbortError') {
-          container.innerHTML = `<p class="no-results" style="color:red;">Erro ao carregar dados.</p>`;
-        }
+        if (e.name !== 'AbortError') container.innerHTML = `<p class="no-results">Erro na consulta.</p>`;
       } finally {
         loading.style.display = 'none';
       }
